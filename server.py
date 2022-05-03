@@ -13,9 +13,9 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
 
 def on_message(client, userdata, msg):
     print(f"<SERVER> Message from topic {msg.topic}, qos {msg.qos}, text {str(msg.payload)}")
-    if device not in device_time:
-        device_time[device_time] = time.time()
     device = msg.topic.split("/")[1]
+    if device not in device_time:
+        device_time[device] = time.time()
     temp = float(msg.payload.decode("utf-8"))
     time = device_time[device]
     db.add_temp(dbcon, device, temp, time)
