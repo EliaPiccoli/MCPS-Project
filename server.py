@@ -1,5 +1,5 @@
 import db
-import time
+import datetime
 import paho.mqtt.client as paho
 from paho import mqtt
 
@@ -15,11 +15,11 @@ def on_message(client, userdata, msg):
     print(f"<SERVER> Message from topic {msg.topic}, qos {msg.qos}, text {str(msg.payload)}")
     device = msg.topic.split("/")[1]
     if device not in device_time:
-        device_time[device] = time.time()
+        device_time[device] = datetime.datetime.now()
     temp = float(msg.payload.decode("utf-8"))
     time = device_time[device]
     db.add_temp(dbcon, device, temp, time)
-    device_time[device] += 600 # 10min between each sample
+    device_time[device] += datetime.timedelta(minutes=15)
 
 device_time = {}
 

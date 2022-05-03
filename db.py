@@ -29,7 +29,7 @@ def create_temp_table(connection):
         print("Invalid connection")
         exit()
 
-def add_temp(connection, device, temp, time):
+def add_temp(connection, device, temp, detection_time):
     if connection is not None:
         try:
             query = """
@@ -37,7 +37,7 @@ def add_temp(connection, device, temp, time):
                 VALUES(?, ?, ?);
             """
             cursor = connection.cursor()
-            cursor.execute(query, (device, temp))
+            cursor.execute(query, (device, temp, detection_time))
             connection.commit()
         except Error as e:
             print(e)
