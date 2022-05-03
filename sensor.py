@@ -1,9 +1,11 @@
+import datetime
 import sys
 import random
 import time
 import paho.mqtt.client as paho
 from paho import mqtt
 from random import gauss, seed
+from utilityFunction import change_time_temp
 
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
@@ -14,11 +16,12 @@ def on_connect(client, userdata, flags, rc, properties=None):
 
 def on_publish(client, userdata, mid, properties=None):
     print(f"Client {str(client)} published message {mid}")
-    
+
+
 def generate_temp(current_temp, client, device_name):
-    temp = gauss(current_temp, 0.3)
+    temp = round(gauss(change_time_temp(datetime.datetime.now().hour), 0.2), 1)
     client.publish(f"temperature/{device_name}", payload=temp, qos=1)
-    return round(temp, 1)
+    return temp
 
 seed(random.random())
 if len(sys.argv) < 4:
@@ -39,3 +42,5 @@ while True:
     current_temp = generate_temp(init_temp, client, device_name)
     print(current_temp)
     time.sleep(pub_rate)
+
+
