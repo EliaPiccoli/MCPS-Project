@@ -31,8 +31,8 @@ db.create_temp_table(dbcon)
 client = paho.Client(client_id="", userdata=None, protocol=paho.MQTTv5)
 client.on_connect = on_connect
 client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
-client.username_pw_set("epmqttuser", "P4ssw0rd123987!")
-client.connect("e0bbb35ea4f34a6abdc1e48aec812392.s2.eu.hivemq.cloud", 8883)
+client.username_pw_set("mqttC", "PzX2nUnfVyt5TEG")
+client.connect("5295f809b44f4def8eecc6af6fd365c3.s2.eu.hivemq.cloud", 8883)
 
 client.on_subscribe = on_subscribe
 client.on_message = on_message

@@ -19,8 +19,9 @@ def on_publish(client, userdata, mid, properties=None):
 
 
 def generate_temp(current_temp, client, device_name):
-    temp = round(gauss(change_time_temp(datetime.datetime.now().hour), 0.2), 1)
+    temp = round(gauss(change_time_temp(datetime.datetime.now().hour, device_name), 0.2), 1)
     client.publish(f"temperature/{device_name}", payload=temp, qos=1)
+    client.loop(2, 10)
     return temp
 
 seed(random.random())
@@ -33,9 +34,9 @@ pub_rate = int(sys.argv[3])
 
 client = paho.Client(client_id=device_name, userdata=None, protocol=paho.MQTTv5)
 client.on_connect = on_connect
-client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
-client.username_pw_set("epmqttuser", "P4ssw0rd123987!")
-client.connect("e0bbb35ea4f34a6abdc1e48aec812392.s2.eu.hivemq.cloud", 8883)
+client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS_CLIENT)
+client.username_pw_set("mqttC", "PzX2nUnfVyt5TEG")
+client.connect("5295f809b44f4def8eecc6af6fd365c3.s2.eu.hivemq.cloud", 8883)
 client.on_publish = on_publish
 
 while True:

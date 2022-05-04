@@ -62,7 +62,7 @@ def get_device_temp(connection, device):
     if connection is not None:
         try:
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM user WHERE device = ?;", (device, ))
+            cursor.execute("SELECT * FROM temp WHERE device = ?;", (device, ))
             rows = cursor.fetchall()
             return rows
         except Error as e:
