@@ -54,23 +54,34 @@ def rooms_factor(room, hour):
     match room:
         case 'kitchen':
             if 11 < hour < 16:
-                return 2.3
+                return 2.5
             elif 9 < hour <= 11:
-                return 1.7
+                return 2
             elif 16 <= hour <= 18:
-                return 1.7
+                return 2
             else:
-                return 1.3
+                return 1.5
         case 'bedroom1':
             if 11 < hour < 16:
-                return 2.1
+                return 2
             elif 9 < hour <= 11:
-                return 1.55
+                return 1.5
             elif 16 <= hour <= 18:
-                return 1.55
+                return 1.5
             else:
-                return 1.2
+                return 1
         case 'bedroom2':
-            return 1.1
+            return 1
         case 'bedroom3':
-            return 0.8
+            return 0
+        case 'bathroom':
+            if 18 < hour < 22:
+                return 3.7
+            elif 22 <= hour <= 00:
+                return 3.2
+            elif 9 <= hour <= 18:
+                return 2.7
+            else:
+                return 2.2
+
+

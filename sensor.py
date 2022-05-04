@@ -18,8 +18,8 @@ def on_publish(client, userdata, mid, properties=None):
     print(f"Client {str(client)} published message {mid}")
 
 
-def generate_temp(current_temp, client, device_name):
-    temp = round(gauss(change_time_temp(datetime.datetime.now().hour, device_name), 0.2), 1)
+def generate_temp(current_temp, client, device_name, hour):
+    temp = round(gauss(change_time_temp(hour, device_name), 0.5), 1)
     client.publish(f"temperature/{device_name}", payload=temp, qos=1)
     client.loop(2, 10)
     return temp
@@ -39,8 +39,10 @@ client.username_pw_set("mqttC", "PzX2nUnfVyt5TEG")
 client.connect("5295f809b44f4def8eecc6af6fd365c3.s2.eu.hivemq.cloud", 8883)
 client.on_publish = on_publish
 
+time_current = datetime.datetime.now()
 while True:
-    current_temp = generate_temp(init_temp, client, device_name)
+    current_temp = generate_temp(init_temp, client, device_name, time_current.hour)
+    time_current += datetime.timedelta(minutes=15)
     print(current_temp)
     time.sleep(pub_rate)
 

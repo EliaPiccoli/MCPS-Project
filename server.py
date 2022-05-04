@@ -19,7 +19,7 @@ def on_message(client, userdata, msg):
     temp = float(msg.payload.decode("utf-8"))
     time = device_time[device]
     db.add_temp(dbcon, device, temp, time)
-    device_time[device] += datetime.timedelta(minutes=15)
+    device_time[device] += datetime.timedelta(minutes=10)
 
 device_time = {}
 
