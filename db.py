@@ -1,6 +1,8 @@
 import sqlite3
 from sqlite3 import Error
 
+DBPATH = "./database/database.db"
+
 def create_connection(db_file):
     print("<DB> Creating connection with db")
     conn = None
@@ -62,7 +64,20 @@ def get_device_temp(connection, device):
     if connection is not None:
         try:
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM user WHERE device = ?;", (device, ))
+            cursor.execute("SELECT * FROM temp WHERE device = ?;", (device, ))
+            rows = cursor.fetchall()
+            return rows
+        except Error as e:
+            print(e)
+    else:
+        print("Invalid connection")
+        exit()
+
+def get_last_temp(connection):
+    if connection is not None:
+        try:
+            cursor = connection.cursor()
+            cursor.execute("SELECT device, value, MAX(time) FROM temp GROUP BY device;")
             rows = cursor.fetchall()
             return rows
         except Error as e:

@@ -1,4 +1,5 @@
 import datetime
+from mimetypes import init
 import sys
 import random
 import time
@@ -17,10 +18,24 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def on_publish(client, userdata, mid, properties=None):
     print(f"Client {str(client)} published message {mid}")
 
+def on_subscribe(client, userdata, mid, granted_qos, properties=None):
+    print(f"Subscribed: {str(mid)}, QOS: {str(granted_qos[0])}")
 
-def generate_temp(current_temp, client, device_name):
-    temp = round(gauss(change_time_temp(datetime.datetime.now().hour), 0.2), 1)
+def on_message(client, userdata, msg):
+    global device_name, ventilation
+    temp = float(msg.payload.decode("utf-8"))
+    if temp > 0:
+        ventilation = True
+    else:
+        ventilation = False
+    generate_temp(client, device_name, temp)
+
+def generate_temp(client, device_name, current_temp=None):
+    global ventilation
+    tp = change_time_temp(datetime.datetime.now().hour) if not ventilation else current_temp
+    temp = round(gauss(tp, 0.2), 1)
     client.publish(f"temperature/{device_name}", payload=temp, qos=1)
+    client.loop(2, 10)
     return temp
 
 seed(random.random())
@@ -37,10 +52,13 @@ client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
 client.username_pw_set("epmqttuser", "P4ssw0rd123987!")
 client.connect("e0bbb35ea4f34a6abdc1e48aec812392.s2.eu.hivemq.cloud", 8883)
 client.on_publish = on_publish
+client.on_subscribe = on_subscribe
+client.on_message = on_message
+client.subscribe(f"{device_name}/temp", qos=1)
+ventilation = False
 
+current_temp = init_temp
 while True:
-    current_temp = generate_temp(init_temp, client, device_name)
+    current_temp = generate_temp(client, device_name, current_temp)
     print(current_temp)
     time.sleep(pub_rate)
-
-
