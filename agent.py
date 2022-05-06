@@ -7,10 +7,11 @@ import numpy as np
 import env
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'state_', 'done'))
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = "cpu"
 
 class ReplayMemory():
     def __init__(self, capacity):
+        print("Creating ReplayMemory")
         self.memory = deque([],maxlen=capacity)
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'state_', 'done'))
 
@@ -31,6 +32,8 @@ class ReplayMemory():
 
 class Model(nn.Module):
     def __init__(self, state_size, action_size, layer1=64, layer2=64):
+        super(Model, self).__init__()
+        print("Creating Model")
         self.l1 = nn.Linear(state_size, layer1)
         self.l2 = nn.Linear(layer1, layer2)
         self.l3 = nn.Linear(layer2, action_size)
@@ -41,7 +44,7 @@ class Model(nn.Module):
         x = F.relu(self.l2(x))
         return self.l3(x)
 
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 MEMORY_SIZE = 10000
 GAMMA = 0.99
 TAU = 1e-3
@@ -70,7 +73,7 @@ class Agent():
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=LR)
 
     def fit_model(self):
-        states, actions, rewards, states_, dones = self.memory.sample(self.bath_size)
+        states, actions, rewards, states_, dones = self.memory.sample(self.batch_size)
 
         Q_target_next = self.target_net(states_).detach().max(1)[0].unsqueeze(1)
         Q_targets = rewards + self.gamma * Q_target_next * (1 - dones)
@@ -85,6 +88,7 @@ class Agent():
             self.target_net.data.copy_(self.tau*net_param.data + (1.0-self.tau)*target_param.data)
 
     def train(self):
+        print("Starting training")
         reward_list = []
         for e in range(self.episodes):
             self.optimizer.zero_grad()
@@ -106,14 +110,21 @@ class Agent():
                 state_, reward, done = env.step(state, action)
 
                 self.memory.push(state.copy(), action, reward, state_.copy(), done)
-
+                print(state, action, reward, state_, done)
                 reward_e += reward
                 state = state_.copy()
+            
+            env.vent_off()
 
             self.eps = max(self.eps_min, self.eps*self.eps_decay)
 
-            self.fit_model()
-            self.soft_target_update()
+            if len(self.memory.memory) >= self.batch_size:
+                self.fit_model()
+                self.soft_target_update()
 
             reward_list.append(reward_e)
             print(f"episode: {e}, reward: {reward_e}")
+
+if __name__ == "__main__":
+    agent = Agent(6,3)
+    agent.train()

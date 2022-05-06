@@ -1,6 +1,5 @@
-import numpy as np
-from torch import ne
 import db
+import time
 import random
 import paho.mqtt.client as paho
 from paho import mqtt
@@ -32,44 +31,49 @@ def step(state, action):
     next_state = []
     reward = 0.0
 
-    hot = []
-    cold = []
+    hot_list = []
+    cold_list = []
     if action == 0:             # from hottest to coldest
         temp = state[:-1]
         hot = max(temp)
-        hot_index = list.index(hot)
+        hot_index = temp.index(hot)
         cold = min(temp)
-        cold_index = list.index(cold)
+        cold_index = temp.index(cold)
         new_cold = cold + state[-1]/MAX_VENT
         new_hot = hot - state[-1]/MAX_VENT
-        hot.append((hot_index, new_hot))
-        cold.append((cold_index, new_cold))
+        hot_list.append((hot_index, new_hot))
+        cold_list.append((cold_index, new_cold))
     elif action == 1:           # from hottest to all
         temp = state[:-1]
         hot = max(temp)
-        hot_index = list.index(hot)
+        hot_index = temp.index(hot)
         new_hot = hot - state[-1]/MAX_VENT
-        hot.append((hot_index, new_hot))
-        for index, v in temp:
+        hot_list.append((hot_index, new_hot))
+        for index, v in enumerate(temp):
             if index != hot_index:
-                cold.append((index, v + state[-1]/MAX_VENT))
+                cold_list.append((index, v + state[-1]/MAX_VENT))
     elif action == 2:           # from hottest to temp < avg
         temp = state[:-1]
         hot = max(temp)
-        hot_index = list.index(hot)
+        hot_index = temp.index(hot)
         new_hot = hot - state[-1]/MAX_VENT
-        hot.append((hot_index, new_hot))
+        hot_list.append((hot_index, new_hot))
         avg = sum(temp)/len(temp)
-        for index, v in temp:
+        for index, v in enumerate(temp):
             if v < avg:
-                cold.append((index, v + state[-1]/MAX_VENT))
+                cold_list.append((index, v + state[-1]/MAX_VENT))
 
     # send to devices changes in temp
     client = create_client()
-    for hot_index, new_hot in hot:
+    for hot_index, new_hot in hot_list:
         client.publish(f"{idx2dev[hot_index]}/temp", payload=new_hot, qos=1)
-    for cold_index, new_cold in cold:
+        client.loop(60, 20)
+    for cold_index, new_cold in cold_list:
         client.publish(f"{idx2dev[cold_index]}/temp", payload=new_cold, qos=1)
+        client.loop(60, 20)
+    client.disconnect()
+    
+    time.sleep(2)
     
     # read new temp
     next_state = get_state(state[-1])
@@ -81,8 +85,15 @@ def step(state, action):
     reward -= next_state[-1]*0.07*0.5
 
     # if equals -> done
-    first = round(next_state[0], 0)
+    first = next_state[0]
     for t in next_state[:-1]:
-        if round(t, 0) != first:
+        if abs(first - t) > 0.7:
             return next_state, reward, False
     return next_state, reward, True
+
+def vent_off():
+    client = create_client()
+    for k in idx2dev:
+        client.publish(f"{idx2dev[k]}/temp", payload=-1, qos=1)
+        client.loop(60, 20)
+    client.disconnect()

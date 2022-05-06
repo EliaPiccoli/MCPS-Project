@@ -16,24 +16,30 @@ def on_connect(client, userdata, flags, rc, properties=None):
         exit()
 
 def on_publish(client, userdata, mid, properties=None):
-    print(f"Client {str(client)} published message {mid}")
+    # print(f"Client {str(client)} published message {mid}")
+    global ventilation
+    print(f"Ventilation: {ventilation}")
 
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
     print(f"Subscribed: {str(mid)}, QOS: {str(granted_qos[0])}")
 
 def on_message(client, userdata, msg):
     global device_name, ventilation
+    print(f"########### {device_name} received message ###########")
     temp = float(msg.payload.decode("utf-8"))
     if temp > 0:
         ventilation = True
     else:
         ventilation = False
-    generate_temp(client, device_name, temp)
+    generate_temp(client, device_name, -1, temp) # add time correct
 
-def generate_temp(client, device_name, current_temp=None):
-    global ventilation
-    tp = change_time_temp(datetime.datetime.now().hour) if not ventilation else current_temp
-    temp = round(gauss(tp, 0.2), 1)
+def generate_temp(client, device_name, hour, current_temp=None):
+    global ventilation, current_time
+    if hour < 0:
+        hour = current_time + datetime.timedelta(minutes=15)
+    tp = change_time_temp(hour, device_name) if not ventilation else current_temp
+    dev = 0.2 if not ventilation else 0.09
+    temp = round(gauss(tp, dev), 1)
     client.publish(f"temperature/{device_name}", payload=temp, qos=1)
     client.loop(2, 10)
     return temp
@@ -58,7 +64,9 @@ client.subscribe(f"{device_name}/temp", qos=1)
 ventilation = False
 
 current_temp = init_temp
+current_time = datetime.datetime.now()
 while True:
-    current_temp = generate_temp(client, device_name, current_temp)
-    print(current_temp)
+    current_temp = generate_temp(client, device_name, current_time.hour, current_temp)
+    current_time += datetime.timedelta(minutes=15)
+    print(f"{device_name} - Temperature: {current_temp}")
     time.sleep(pub_rate)
