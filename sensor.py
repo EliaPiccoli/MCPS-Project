@@ -29,25 +29,26 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
 
 
 def on_message(client, userdata, msg):
-    global device_name, ventilation
+    global device_name, ventilation, last_vent_temp
     print(f"########### {device_name} received message ###########")
     temp = float(msg.payload.decode("utf-8"))
     if temp > 0:
         ventilation = True
+        last_vent_temp = temp
     else:
         ventilation = False
     generate_temp(client, device_name, -1, temp)  # add time correct
 
 
 def generate_temp(client, device_name, hour, current_temp=None):
-    global ventilation, current_time
+    global ventilation, current_time, last_vent_temp
     print(hour)
     if hour < 0:
         h = (current_time + datetime.timedelta(minutes=15)).hour
     else:
         h = hour
     print(h)
-    tp = change_time_temp(h, device_name) if not ventilation else current_temp
+    tp = change_time_temp(h, device_name) if not ventilation else last_vent_temp
     dev = 0.2 if not ventilation else 0
     print(tp)
     print(dev)
@@ -56,9 +57,9 @@ def generate_temp(client, device_name, hour, current_temp=None):
     temp = round(gauss(tp, dev), 1)
     client.publish(f"temperature/{device_name}", payload=temp, qos=1)
 
-    if not ventilation and hour >= 0:
+    if hour >= 0:       # main loop
         client.loop(2, 10)
-    else:
+    else:               # vent
         client.loop_start()
     return temp
 
@@ -81,6 +82,7 @@ client.on_subscribe = on_subscribe
 client.on_message = on_message
 client.subscribe(f"{device_name}/temp", qos=1)
 ventilation = False
+last_vent_temp = 0
 
 current_temp = init_temp
 current_time = datetime.datetime.now()
