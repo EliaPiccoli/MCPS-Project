@@ -7,6 +7,7 @@ import numpy as np
 import env
 import time
 import matplotlib.pyplot as plt
+import sys
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'state_', 'done'))
 device = "cpu"
@@ -135,5 +136,10 @@ class Agent():
         plt.show()
 
 if __name__ == "__main__":
-    agent = Agent(6,3)
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} <state_size> <action_size>")
+        exit()
+    state_size = int(sys.argv[1])
+    action_size = int(sys.argv[2])
+    agent = Agent(state_size, action_size)
     agent.train()
