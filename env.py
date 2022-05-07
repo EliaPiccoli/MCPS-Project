@@ -9,14 +9,12 @@ dbcon = db.create_connection(DBPATH)
 MAX_VENT = 5
 idx2dev = {}
 
-
 def create_client():
     client = paho.Client(client_id="env", userdata=None, protocol=paho.MQTTv5)
     client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
     client.username_pw_set("epmqttuser", "P4ssw0rd123987!")
     client.connect("e0bbb35ea4f34a6abdc1e48aec812392.s2.eu.hivemq.cloud", 8883)
     return client
-
 
 def get_state(vent=None):
     global idx2dev
@@ -29,10 +27,9 @@ def get_state(vent=None):
     state.append(ventilation)
     return state
 
-
 def step(state, action):
     next_state = []
-    reward = 0.0
+    reward = -0.5 # cost per step
 
     hot_list = []
     cold_list = []
@@ -65,8 +62,8 @@ def step(state, action):
         for index, v in enumerate(temp):
             if v < avg:
                 cold_list.append((index, v + state[-1] / MAX_VENT))
-    print(hot_list)
-    print(cold_list)
+    # print(hot_list)
+    # print(cold_list)
     # send to devices changes in temp
     client = create_client()
     for hot_index, new_hot in hot_list:
@@ -85,15 +82,13 @@ def step(state, action):
     # generate reward
     avg = sum(next_state[:-1]) / len(next_state[:-1])
     for t in next_state[:-1]:
-        reward -= abs(t - avg)
+        reward -= abs(t - avg)/2
     reward -= next_state[-1] * 0.07 * 0.5
 
     # if equals -> done
-    abg = sum(next_state[:-1]) / len(next_state[:-1])
-
-    first = next_state[0]
+    avg = sum(next_state[:-1]) / len(next_state[:-1])
     for t in next_state[:-1]:
-        if abs(abg - t) > 1:
+        if abs(avg - t) > 1:
             return next_state, reward, False
     return next_state, reward, True
 

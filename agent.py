@@ -5,13 +5,15 @@ import torch.nn.functional as F
 import random
 import numpy as np
 import env
+import time
+import matplotlib.pyplot as plt
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'state_', 'done'))
 device = "cpu"
 
 class ReplayMemory():
     def __init__(self, capacity):
-        print("Creating ReplayMemory")
+        # print("Creating ReplayMemory")
         self.memory = deque([],maxlen=capacity)
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'state_', 'done'))
 
@@ -25,7 +27,7 @@ class ReplayMemory():
         states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(device)
         rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(device)
-        next_states = torch.from_numpy(np.vstack([e.next_state for e in experiences if e is not None])).float().to(device)
+        next_states = torch.from_numpy(np.vstack([e.state_ for e in experiences if e is not None])).float().to(device)
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(device)
   
         return (states, actions, rewards, next_states, dones)
@@ -33,26 +35,26 @@ class ReplayMemory():
 class Model(nn.Module):
     def __init__(self, state_size, action_size, layer1=64, layer2=64):
         super(Model, self).__init__()
-        print("Creating Model")
+        # print("Creating Model")
         self.l1 = nn.Linear(state_size, layer1)
         self.l2 = nn.Linear(layer1, layer2)
         self.l3 = nn.Linear(layer2, action_size)
 
-    def foward(self, x):
+    def forward(self, x):
         x = x.to(device)
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return self.l3(x)
 
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 MEMORY_SIZE = 10000
 GAMMA = 0.99
 TAU = 1e-3
 LR = 5e-4
 EPS = 1.0
 EPS_MIN = 0.02
-EPS_DECAY = 0.995
-EPISODES = 10
+EPS_DECAY = 0.99
+EPISODES = 50
 
 class Agent():
     def __init__(self, state_size, action_size):
@@ -85,10 +87,10 @@ class Agent():
 
     def soft_target_update(self):
         for target_param, net_param in zip(self.target_net.parameters(), self.net.parameters()):
-            self.target_net.data.copy_(self.tau*net_param.data + (1.0-self.tau)*target_param.data)
+            target_param.data.copy_(self.tau*net_param.data + (1.0-self.tau)*target_param.data)
 
     def train(self):
-        print("Starting training")
+        # print("Starting training")
         reward_list = []
         for e in range(self.episodes):
             self.optimizer.zero_grad()
@@ -104,13 +106,13 @@ class Agent():
                 else:
                     self.net.eval()
                     with torch.no_grad():
-                        action = np.argmax(self.net(state))
+                        action = np.argmax(self.net(torch.from_numpy(np.vstack([state])).float()))
                     self.net.train()
 
                 state_, reward, done = env.step(state, action)
 
                 self.memory.push(state.copy(), action, reward, state_.copy(), done)
-                print(state, action, reward, state_, done)
+                # print(state, action, reward, state_, done)
                 reward_e += reward
                 state = state_.copy()
             
@@ -124,6 +126,13 @@ class Agent():
 
             reward_list.append(reward_e)
             print(f"episode: {e}, reward: {reward_e}")
+
+            torch.save(self.net.state_dict(), f"models/{e}_model_state_dict")
+
+            time.sleep(10)
+        
+        plt.plot(range(len(reward_list)), reward_list)
+        plt.show()
 
 if __name__ == "__main__":
     agent = Agent(6,3)
