@@ -2,8 +2,9 @@ import db
 import datetime
 import paho.mqtt.client as paho
 from paho import mqtt
+from db import DBPATH
 
-DBPATH = "./database/database.db"
+counter = 0
 
 def on_connect(client, userdata, flags, rc, properties=None):
     print(f"<SERVER> CONNACK received with code {rc}.")
@@ -12,7 +13,9 @@ def on_subscribe(client, userdata, mid, granted_qos, properties=None):
     print(f"<SERVER> Subscribed: {str(mid)}, QOS: {str(granted_qos[0])}")
 
 def on_message(client, userdata, msg):
-    print(f"<SERVER> Message from topic {msg.topic}, qos {msg.qos}, text {str(msg.payload)}")
+    global counter
+    print(f"[{counter}] <SERVER> Message from topic {msg.topic}, qos {msg.qos}, text {str(msg.payload)}")
+    counter += 1
     device = msg.topic.split("/")[1]
     if device not in device_time:
         device_time[device] = datetime.datetime.now()
