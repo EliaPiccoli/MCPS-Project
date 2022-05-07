@@ -26,11 +26,10 @@ def on_message(client, userdata, msg):
 
 device_time = {}
 
-# setting db
 dbcon = db.create_connection(DBPATH)
 db.create_temp_table(dbcon)
+db.create_vent_table(dbcon)
 
-# create mqtt client
 client = paho.Client(client_id="", userdata=None, protocol=paho.MQTTv5)
 client.on_connect = on_connect
 client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)

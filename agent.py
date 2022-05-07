@@ -10,11 +10,10 @@ import matplotlib.pyplot as plt
 import sys
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'state_', 'done'))
-device = "cpu"
+device = "cpu" # non la va la gpu su wsl :(
 
 class ReplayMemory():
     def __init__(self, capacity):
-        # print("Creating ReplayMemory")
         self.memory = deque([],maxlen=capacity)
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'state_', 'done'))
 
@@ -36,7 +35,6 @@ class ReplayMemory():
 class Model(nn.Module):
     def __init__(self, state_size, action_size, layer1=64, layer2=64):
         super(Model, self).__init__()
-        # print("Creating Model")
         self.l1 = nn.Linear(state_size, layer1)
         self.l2 = nn.Linear(layer1, layer2)
         self.l3 = nn.Linear(layer2, action_size)
@@ -91,7 +89,6 @@ class Agent():
             target_param.data.copy_(self.tau*net_param.data + (1.0-self.tau)*target_param.data)
 
     def train(self):
-        # print("Starting training")
         reward_list = []
         for e in range(self.episodes):
             self.optimizer.zero_grad()
@@ -100,7 +97,6 @@ class Agent():
             done = False
             reward_e = 0
             
-            # collect episode data
             while not done:
                 if random.random() <= self.eps:
                     action = random.randrange(0, self.action_size)
@@ -113,7 +109,6 @@ class Agent():
                 state_, reward, done = env.step(state, action)
 
                 self.memory.push(state.copy(), action, reward, state_.copy(), done)
-                # print(state, action, reward, state_, done)
                 reward_e += reward
                 state = state_.copy()
             

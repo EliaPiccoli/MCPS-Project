@@ -1,20 +1,11 @@
 import db
 import time
 import random
-import paho.mqtt.client as paho
-from paho import mqtt
 from db import DBPATH
 
 dbcon = db.create_connection(DBPATH)
 MAX_VENT = 5
 idx2dev = {}
-
-def create_client():
-    client = paho.Client(client_id="env", userdata=None, protocol=paho.MQTTv5)
-    client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
-    client.username_pw_set("epmqttuser", "P4ssw0rd123987!")
-    client.connect("e0bbb35ea4f34a6abdc1e48aec812392.s2.eu.hivemq.cloud", 8883)
-    return client
 
 def get_state(vent=None):
     global idx2dev
@@ -65,14 +56,10 @@ def step(state, action):
     # print(hot_list)
     # print(cold_list)
     # send to devices changes in temp
-    client = create_client()
     for hot_index, new_hot in hot_list:
-        client.publish(f"{idx2dev[hot_index]}/temp", payload=new_hot, qos=1)
-        client.loop(60, 20)
+        db.add_vent(dbcon, idx2dev[hot_index], new_hot)
     for cold_index, new_cold in cold_list:
-        client.publish(f"{idx2dev[cold_index]}/temp", payload=new_cold, qos=1)
-        client.loop(60, 20)
-    client.disconnect()
+        db.add_vent(dbcon, idx2dev[cold_index], new_cold)
 
     time.sleep(2)
 
@@ -88,14 +75,9 @@ def step(state, action):
     # if equals -> done
     avg = sum(next_state[:-1]) / len(next_state[:-1])
     for t in next_state[:-1]:
-        if abs(avg - t) > 1:
+        if abs(avg - t) > 0.5:
             return next_state, reward, False
     return next_state, reward, True
 
-
 def vent_off():
-    client = create_client()
-    for k in idx2dev:
-        client.publish(f"{idx2dev[k]}/temp", payload=-1, qos=1)
-        client.loop(60, 20)
-    client.disconnect()
+    db.remove_vent(dbcon)
