@@ -34,5 +34,7 @@ while True:
     plt.plot(range(len(temp)), temp, "b")
     plt.plot(range(len(temp)-1, len(temp)+len(exp_temp)-1), exp_temp, "r")
     plt.ylabel("Temperature [°C]")
+    plt.xlabel("Time")
+    plt.legend(['Past temperatures', 'Future temperatures'])
     plt.show(block=False)
     plt.pause(1)
