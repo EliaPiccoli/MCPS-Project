@@ -1,8 +1,6 @@
-# House temperature monitoring system and smart ventilation
+# House temperature monitoring system & smart air distribution
 
 ## Project for the Mobile and Cyber-Physical Systems course @ University of Pisa
-
----
 
 ## Description
 The project aim to develop a system to monitor the temperature of the rooms inside the house. This is obtained by sensors that collects data and send them using *MQTT*. The server reads the data and store it in a local database in order to be accessed by the main application.
@@ -35,5 +33,5 @@ python real_time_map.py
 python real_time_plot.py <room>
 
 # Activate the ventilation system
-python ventilation.py <ventilation_force> <state_size> <action_size>
+python ventilation.py <ventilation_force>
 ```
