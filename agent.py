@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import sys
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'state_', 'done'))
-device = "cpu" # non la va la gpu su wsl :(
+device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class ReplayMemory():
     def __init__(self, capacity):
@@ -53,7 +53,8 @@ LR = 5e-4
 EPS = 1.0
 EPS_MIN = 0.02
 EPS_DECAY = 0.99
-EPISODES = 50
+EPISODES = 150
+MAX_STEP = 30
 
 class Agent():
     def __init__(self, state_size, action_size):
@@ -66,7 +67,7 @@ class Agent():
         self.eps = EPS
         self.eps_decay = EPS_DECAY
         self.eps_min = EPS_MIN
-        self.episodes =EPISODES
+        self.episodes = EPISODES
 
         self.net = Model(state_size, action_size).to(device)
         self.target_net = Model(state_size, action_size).to(device)
@@ -96,8 +97,9 @@ class Agent():
             state = env.get_state()
             done = False
             reward_e = 0
+            ep_steps = 0
             
-            while not done:
+            while not done and ep_steps < MAX_STEP:
                 if random.random() <= self.eps:
                     action = random.randrange(0, self.action_size)
                 else:
@@ -107,9 +109,16 @@ class Agent():
                     self.net.train()
 
                 state_, reward, done = env.step(state, action)
-
-                self.memory.push(state.copy(), action, reward, state_.copy(), done)
+                
+                if not done:
+                    if ep_steps + 1 == MAX_STEP:
+                        self.memory.push(state.copy(), action, -1, state_.copy(), 1)
+                    else:
+                        self.memory.push(state.copy(), action, reward, state_.copy(), done)
+                else:
+                    self.memory.push(state.copy(), action, reward, state_.copy(), done)
                 reward_e += reward
+                ep_steps += 1
                 state = state_.copy()
             
             env.vent_off()
@@ -121,11 +130,12 @@ class Agent():
                 self.soft_target_update()
 
             reward_list.append(reward_e)
-            print(f"episode: {e}, reward: {reward_e}")
+            print(f"episode: {e}, reward: {reward_e}, steps: {ep_steps}")
+    
+            if e % 10 == 0:
+                torch.save(self.net.state_dict(), f"models/checkpoint/{e}_model_state_dict")
 
-            torch.save(self.net.state_dict(), f"models/{e}_model_state_dict")
-
-            time.sleep(10)
+            time.sleep(4)
         
         plt.plot(range(len(reward_list)), reward_list)
         plt.show()

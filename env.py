@@ -4,7 +4,7 @@ import random
 from db import DBPATH
 
 dbcon = db.create_connection(DBPATH)
-MAX_VENT = 5
+MAX_VENT = 6
 idx2dev = {}
 
 def get_state(vent=None):
@@ -42,7 +42,7 @@ def step(state, action):
         hot_list.append((hot_index, new_hot))
         for index, v in enumerate(temp):
             if index != hot_index:
-                cold_list.append((index, v + state[-1] / MAX_VENT))
+                cold_list.append((index, v + (state[-1] / MAX_VENT)/(len(temp) - 1)))
     elif action == 2:  # from hottest to temp < avg
         temp = state[:-1]
         hot = max(temp)
@@ -50,9 +50,10 @@ def step(state, action):
         new_hot = hot - state[-1] / MAX_VENT
         hot_list.append((hot_index, new_hot))
         avg = sum(temp) / len(temp)
+        l = sum(1 for t in temp if t < avg)
         for index, v in enumerate(temp):
             if v < avg:
-                cold_list.append((index, v + state[-1] / MAX_VENT))
+                cold_list.append((index, v + (state[-1] / MAX_VENT)/l))
     # print(hot_list)
     # print(cold_list)
     # send to devices changes in temp
