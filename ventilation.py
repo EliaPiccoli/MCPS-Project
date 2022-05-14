@@ -15,7 +15,7 @@ state_size = 6
 action_size = 3
 dbcon = db.create_connection(DBPATH)
 model = agent.Model(state_size, action_size)
-model.load_state_dict(torch.load("models/checkpoint/140_model_state_dict"))
+model.load_state_dict(torch.load("models/ventilation_model/120_model_state_dict"))
 model.eval()
 current_state = env.get_state(ventilation)
 done = False
